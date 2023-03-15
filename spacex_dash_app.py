@@ -38,7 +38,9 @@ app.layout = html.Div(children=[html.H1('SpaceX Launch Records Dashboard',
 
                                 html.P("Payload range (Kg):"),
                                 # TASK 3: Add a slider to select payload range
-                                #dcc.RangeSlider(id='payload-slider',...)
+                                dcc.RangeSlider(id='payload-slider',
+                                                min=0, max=10000, step=1000,
+                                                value=[min_payload, max_payload]),
 
                                 # TASK 4: Add a scatter chart to show the correlation between payload and launch success
                                 html.Div(dcc.Graph(id='success-payload-scatter-chart')),
@@ -51,7 +53,7 @@ app.layout = html.Div(children=[html.H1('SpaceX Launch Records Dashboard',
 def get_pie_chart(entered_site):
     if entered_site == 'ALL':
         filtered_df = spacex_df[spacex_df['class'] == 1].groupby('Launch Site').count().reset_index()
-        fig = px.pie(spacex_df, values='class', 
+        fig = px.pie(filtered_df, values='class', 
                      names='Launch Site', 
                      title='Successful launches per site')
         return fig
@@ -64,7 +66,21 @@ def get_pie_chart(entered_site):
 
 # TASK 4:
 # Add a callback function for `site-dropdown` and `payload-slider` as inputs, `success-payload-scatter-chart` as output
-
+@app.callback(Output(component_id='success-payload-scatter-chart', component_property='figure'),
+              Input(component_id='payload-slider', component_property='value'),
+              Input(component_id='site-dropdown', component_property='value'))
+def get_scatter_chart(payload_range, entered_site):
+    filtered_df = spacex_df[(payload_range[0] < spacex_df['Payload Mass (kg)']) &
+                            (payload_range[1] > spacex_df['Payload Mass (kg)'])]
+    if entered_site == 'ALL':
+        fig = px.scatter(filtered_df, x='Payload Mass (kg)', y='class',
+                         color="Booster Version Category")
+        return fig
+    else:
+        filtered_df = filtered_df[filtered_df['Launch Site'] == entered_site]
+        fig = px.scatter(filtered_df, x='Payload Mass (kg)', y='class',
+                         color="Booster Version Category")
+        return fig
 
 # Run the app
 if __name__ == '__main__':
